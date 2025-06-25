@@ -7,11 +7,15 @@ import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner';
 
 // IMPORTANT: Replace 'YOUR_PAYPAL_CLIENT_ID' with your actual PayPal Sandbox or Live Client ID
 // For local development, you'll typically use a Sandbox Client ID.
-const PAYPAL_SDK_URL = `https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=KSH`;
+const PAYPAL_SDK_URL = `https://www.paypal.com/sdk/js?client-id=AYvHCeRav2mifCBKgXSNZqjevixhYEOK_UakbwTKpcEHkfCAcoRgmVumes4Tv27POZbxNh_z5gEN8XhT&currency=KSH`;
 
 function CheckoutPage() {
   const { cartItems, totalPrice, dispatch } = useCart();
   const navigate = useNavigate();
+
+  // Customer Information States (NEW)
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
 
   const [deliveryOption, setDeliveryOption] = useState('pickup'); // 'pickup' or 'delivery'
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -56,27 +60,20 @@ function CheckoutPage() {
       setSdkReady(true); // If already loaded, just set ready state
     }
 
-    // Cleanup function for when component unmounts or effect re-runs
     return () => {
-      // Potentially remove the script if it causes issues on hot reloads, but often not necessary
-      // const scriptElement = document.querySelector(`script[src="${PAYPAL_SDK_URL}"]`);
-      // if (scriptElement) {
-      //   scriptElement.remove();
-      // }
+      // Cleanup for PayPal script if needed on component unmount
     };
-  }, [paymentMethod]); // Re-run this effect if payment method changes
+  }, [paymentMethod]);
 
   // Function to render PayPal buttons using the loaded SDK
   const renderPayPalButtons = () => {
     if (!sdkReady || !window.paypal || totalPrice <= 0) {
-      // Only render if SDK is ready and there's a total price
       return <LoadingSpinner />;
     }
 
-    // Clear any existing buttons to prevent duplicates on re-render
     const buttonContainer = document.getElementById('paypal-button-container');
     if (buttonContainer) {
-      buttonContainer.innerHTML = '';
+      buttonContainer.innerHTML = ''; // Clear any existing buttons to prevent duplicates
     }
 
     window.paypal.Buttons({
@@ -84,11 +81,9 @@ function CheckoutPage() {
         return actions.order.create({
           purchase_units: [{
             amount: {
-              currency_code: 'KSH', // Currency for Kenya Shillings
-              value: totalPrice.toFixed(2), // Ensure amount is a string with 2 decimal places
+              currency_code: 'KSH',
+              value: totalPrice.toFixed(2),
             },
-            // You can add custom_id or invoice_id here for your order tracking
-            // custom_id: 'ORDER_XYZ_123',
           }],
         });
       },
@@ -96,16 +91,13 @@ function CheckoutPage() {
         setLoading(true);
         setMessage(null);
         try {
-          // Capture the payment. This is the client-side confirmation.
           const orderCapture = await actions.order.capture();
           console.log('PayPal Order Captured:', orderCapture);
 
-          // Now, send this payment success information to your backend to finalize the order.
-          // In a real application, your backend would verify this payment capture server-side.
           await placeOrderHandler(null, 'PayPal', orderCapture.id); // Pass payment details
           setMessage({ type: 'success', text: `PayPal payment successful! Order ID: ${orderCapture.id}. Your order has been placed.` });
-          dispatch({ type: CART_ACTIONS.CLEAR_CART }); // Clear cart after successful order placement
-          // navigate(`/order-confirmation/${orderCapture.id}`); // Optional: Redirect to a dedicated confirmation page
+          dispatch({ type: CART_ACTIONS.CLEAR_CART });
+          navigate(`/order-confirmation/${orderCapture.id}`); // Redirect to confirmation page
         } catch (error) {
           console.error("PayPal capture error or order placement failed:", error);
           setMessage({ type: 'danger', text: 'PayPal payment failed or order could not be placed in our system.' });
@@ -121,57 +113,47 @@ function CheckoutPage() {
       onCancel: (data) => {
         setMessage({ type: 'info', text: 'PayPal payment cancelled by user.' });
       }
-    }).render('#paypal-button-container'); // Render buttons into the specific container div
+    }).render('#paypal-button-container');
   };
 
-  // Re-render PayPal buttons when SDK is ready, payment method is 'payNow', or total price changes
   useEffect(() => {
     if (sdkReady && paymentMethod === 'payNow' && totalPrice > 0) {
       renderPayPalButtons();
     }
-  }, [sdkReady, paymentMethod, totalPrice]); // Depend on relevant states
+  }, [sdkReady, paymentMethod, totalPrice]);
 
-  // Function to initiate M-Pesa STK Push
   const initiateMpesaPayment = async (amount, isLipaPolepole = false) => {
     setLoading(true);
     setMessage(null);
 
-    // Basic M-Pesa phone number validation
-    // Valid formats: 07XXXXXXXX, 2547XXXXXXXX, +2547XXXXXXXX (where X is a digit)
     if (!mpesaPhoneNumber.trim() || !/^(?:254|\+254|0)?(7\d{8}|1\d{8})$/.test(mpesaPhoneNumber)) {
       setMessage({ type: 'danger', text: 'Please enter a valid M-Pesa phone number (e.g., 0712345678 or 254712345678).' });
       setLoading(false);
       return;
     }
+    if (!customerName.trim() || !customerEmail.trim()) { // New: Validate customer info
+        setMessage({type: 'danger', text: 'Please fill in your Name and Email for contact information.'});
+        setLoading(false);
+        return;
+    }
 
-    // Normalize phone number to 254 format (remove leading 0 or +)
     let formattedPhoneNumber = mpesaPhoneNumber.trim();
     if (formattedPhoneNumber.startsWith('0')) {
       formattedPhoneNumber = '254' + formattedPhoneNumber.substring(1);
     } else if (formattedPhoneNumber.startsWith('+')) {
       formattedPhoneNumber = formattedPhoneNumber.substring(1);
-    } else if (!formattedPhoneNumber.startsWith('254')) {
-      // Assuming if it doesn't start with 0 or +, it's already in 254 format or invalid
-      // Further validation is done by the regex above, but this handles common inputs
     }
 
-
     try {
-      // --- This is where you'd make an API call to your backend for Daraja STK Push ---
-      // Your backend would then call the Safaricom Daraja API securely.
-      console.log(`Initiating M-Pesa STK Push for KSh ${amount} to ${formattedPhoneNumber}`);
-      console.log(`Lipa Polepole option: ${isLipaPolepole}`);
-
       const response = await fetch('http://localhost:5000/api/payments/mpesa/stkpush', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: Number(amount), // Ensure amount is a number
+          amount: Number(amount),
           phoneNumber: formattedPhoneNumber,
-          // You might send order details, callback URLs, etc., to your backend
-          orderId: 'frontend_temp_order_id_' + Date.now(), // A temporary ID for tracking until actual order is placed
+          orderId: 'frontend_temp_order_id_' + Date.now(), // Temporary ID
           isLipaPolepole: isLipaPolepole,
         }),
       });
@@ -184,10 +166,7 @@ function CheckoutPage() {
       const data = await response.json();
       setMessage({ type: 'info', text: data.message || 'M-Pesa STK Push initiated. Please enter your M-Pesa PIN on your phone to complete the transaction.' });
 
-      // In a real scenario, you'd wait for a webhook from Daraja to your backend
-      // and then your backend would confirm the payment and update the order status.
-      // For this frontend-only simulation, we proceed to place the order after initiating STK Push.
-      // This is not secure for production but helps to show the flow.
+      // After simulated M-Pesa success, proceed to place order
       await placeOrderHandler(null, 'Mpesa', data.CheckoutRequestID || 'MPESA_TXN_ID_PENDING'); // Pass Daraja CheckoutRequestID
 
     } catch (error) {
@@ -198,25 +177,26 @@ function CheckoutPage() {
     }
   };
 
-  // Main handler for placing the order
-  const placeOrderHandler = async (e, paymentGatewayTxnId = null, paymentGatewayType = null) => {
-    // If called by form submission (e.g., Pay on Delivery), prevent default
+  const placeOrderHandler = async (e, paymentGatewayType = null, paymentGatewayTxnId = null) => {
     if (e) e.preventDefault();
     setLoading(true);
     setMessage(null);
 
-    // Basic validation
+    // Validate customer info (NEW)
+    if (!customerName.trim() || !customerEmail.trim()) {
+        setMessage({type: 'danger', text: 'Please fill in your Name and Email for contact information.'});
+        setLoading(false);
+        return;
+    }
+
+    // Basic delivery validation
     if (deliveryOption === 'delivery' && !deliveryAddress.trim()) {
       setMessage({ type: 'danger', text: 'Please enter your delivery address.' });
       setLoading(false);
       return;
     }
-
-    // Additional validation for 'Pay Now' and 'Lipa Polepole' if not yet processed
-    // In a production app, the 'placeOrderHandler' would typically be called
-    // *after* a payment gateway confirms success (e.g., via a webhook or direct response).
-    // For this demonstration, we're calling it from the `onApprove` (PayPal) or
-    // after `initiateMpesaPayment` (M-Pesa) which simulate success.
+    
+    // Ensure payment method specific validations are handled
     if (paymentMethod !== 'payOnDelivery' && !paymentGatewayTxnId) {
         setMessage({ type: 'danger', text: 'Please complete the payment using the selected payment method first.' });
         setLoading(false);
@@ -226,30 +206,37 @@ function CheckoutPage() {
     try {
       const orderData = {
         orderItems: cartItems.map(item => ({
-          product: item._id, // Send product ID (Mongoose will populate if needed)
+          product: item._id,
           name: item.name,
           imageUrl: item.imageUrl,
           price: item.price,
           qty: item.qty,
         })),
+        customerInfo: { // New: Add customer information
+            name: customerName.trim(),
+            email: customerEmail.trim(),
+        },
         deliveryInfo: {
           option: deliveryOption,
           address: deliveryOption === 'delivery' ? deliveryAddress.trim() : 'T-Mall Nairobi Pickup',
         },
         paymentMethod,
         itemsPrice: totalPrice,
-        totalPrice: totalPrice, // Assuming total price is just itemsPrice for simplicity
-        isPaid: paymentMethod !== 'payOnDelivery', // Mark as paid if not Cash on Delivery
-        paidAt: paymentMethod !== 'payOnDelivery' ? new Date().toISOString() : null, // Set paid date if not COD
-        paymentResult: paymentGatewayTxnId ? { // Store payment gateway transaction details
+        totalPrice: totalPrice,
+        isPaid: paymentMethod !== 'payOnDelivery',
+        paidAt: paymentMethod !== 'payOnDelivery' ? new Date().toISOString() : null,
+        paymentResult: paymentGatewayTxnId ? {
           id: paymentGatewayTxnId,
-          status: 'COMPLETED', // PayPal is 'COMPLETED'. M-Pesa can be 'PENDING' until webhook.
+          status: 'COMPLETED', // Or 'PENDING' for Daraja STK until webhook
           update_time: new Date().toISOString(),
-          // Store email for PayPal, or phone number/other info for M-Pesa
-          payerInfo: paymentGatewayType === 'PayPal' ? 'buyer@example.com' : mpesaPhoneNumber,
-          paymentGateway: paymentGatewayType // 'PayPal' or 'Mpesa'
+          payerInfo: paymentGatewayType === 'PayPal' ? customerEmail.trim() : mpesaPhoneNumber.trim(), // Use customer's email or mpesa phone
+          paymentGateway: paymentGatewayType
         } : null,
+        // Set initial payment status and balance for Lipa Polepole
+        paymentStatus: paymentMethod === 'lipaPolepole' ? 'partially_paid' : (paymentMethod === 'payOnDelivery' ? 'pending' : 'paid'),
+        balanceDue: paymentMethod === 'lipaPolepole' ? Number(lipaPolepoleBalance) : 0,
       };
+
 
       const response = await fetch('http://localhost:5000/api/orders', {
         method: 'POST',
@@ -266,9 +253,8 @@ function CheckoutPage() {
 
       const data = await response.json();
       setMessage({ type: 'success', text: `Order placed successfully! Order ID: ${data._id}.` });
-      dispatch({ type: CART_ACTIONS.CLEAR_CART }); // Clear cart after successful order
-      // Optionally navigate to an order confirmation page, passing order ID
-      // navigate(`/order/${data._id}`);
+      dispatch({ type: CART_ACTIONS.CLEAR_CART });
+      navigate(`/order-confirmation/${data._id}`); // Redirect to confirmation page with order ID
     } catch (error) {
       console.error('Order placement error:', error);
       setMessage({ type: 'danger', text: error.message || 'An error occurred during order placement. Please try again.' });
@@ -282,8 +268,8 @@ function CheckoutPage() {
       maxWidth: '800px',
       margin: '0 auto',
       padding: '2rem',
-      paddingTop: '6rem', // Adjust for fixed header
-      minHeight: 'calc(100vh - 8rem)', // Ensure content pushes footer down
+      paddingTop: '6rem',
+      minHeight: 'calc(100vh - 8rem)',
       backgroundColor: 'rgba(255, 255, 255, 0.9)',
       borderRadius: '0.5rem',
       boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
@@ -296,7 +282,6 @@ function CheckoutPage() {
       {message && <MessageBox variant={message.type}>{message.text}</MessageBox>}
       {loading && <LoadingSpinner />}
 
-      {/* The main form, only submitted directly for 'Pay on Delivery' */}
       <form onSubmit={paymentMethod === 'payOnDelivery' ? placeOrderHandler : (e) => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {/* Order Summary Section */}
         <div style={{ border: '1px solid #D1D5DB', borderRadius: '0.5rem', padding: '1.5rem', backgroundColor: '#F9FAFB' }}>
@@ -305,12 +290,46 @@ function CheckoutPage() {
             <span>Items ({cartItems.length}):</span>
             <span style={{ fontWeight: '600' }}>KSh {totalPrice.toLocaleString()}</span>
           </p>
-          {/* You can add shipping, tax breakdown here if implemented */}
           <p style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '800', fontSize: '1.25rem', borderTop: '1px dashed #D1D5DB', paddingTop: '1rem', marginTop: '1rem' }}>
             <span>Total:</span>
             <span>KSh {totalPrice.toLocaleString()}</span>
           </p>
         </div>
+
+        {/* Customer Information Section (NEW) */}
+        <div style={{ border: '1px solid #D1D5DB', borderRadius: '0.5rem', padding: '1.5rem', backgroundColor: '#F9FAFB' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: '#1F2937' }}>Your Contact Information</h2>
+            <div style={{ marginBottom: '1rem' }}>
+                <label htmlFor="customerName" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                    Full Name:
+                </label>
+                <input
+                    type="text"
+                    id="customerName"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Your Full Name"
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.375rem', border: '1px solid #D1D5DB' }}
+                    required
+                />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+                <label htmlFor="customerEmail" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                    Email Address:
+                </label>
+                <input
+                    type="email"
+                    id="customerEmail"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="your.email@example.com"
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.375rem', border: '1px solid #D1D5DB' }}
+                    required
+                />
+            </div>
+            {/* Password field is omitted for security. For user accounts, this would be handled in a separate registration/login flow. */}
+        </div>
+
 
         {/* Delivery Options Section */}
         <div style={{ border: '1px solid #D1D5DB', borderRadius: '0.5rem', padding: '1.5rem', backgroundColor: '#F9FAFB' }}>
@@ -390,7 +409,6 @@ function CheckoutPage() {
                 {/* PayPal Button Container */}
                 <div id="paypal-button-container" style={{ marginBottom: '1rem' }}>
                   {!sdkReady ? <LoadingSpinner /> : null}
-                  {/* Buttons will be rendered here by renderPayPalButtons() */}
                 </div>
 
                 {/* M-Pesa Daraja Form (Pay Now) */}
@@ -411,7 +429,7 @@ function CheckoutPage() {
                     type="button" // Important: Use type="button" to prevent form submission
                     onClick={() => initiateMpesaPayment(totalPrice, false)} // False for not Lipa Polepole
                     className="button-primary"
-                    disabled={loading || !mpesaPhoneNumber.trim() || totalPrice <= 0}
+                    disabled={loading || !mpesaPhoneNumber.trim() || totalPrice <= 0 || !customerName.trim() || !customerEmail.trim()}
                     style={{ width: '100%' }}
                   >
                     Pay KSh {totalPrice.toLocaleString()} with M-Pesa
@@ -473,7 +491,7 @@ function CheckoutPage() {
                   type="button" // Important: Use type="button" to prevent form submission
                   onClick={() => initiateMpesaPayment(lipaPolepoleUpfront, true)} // True for Lipa Polepole
                   className="button-primary"
-                  disabled={loading || !mpesaPhoneNumber.trim() || Number(lipaPolepoleUpfront) <= 0}
+                  disabled={loading || !mpesaPhoneNumber.trim() || Number(lipaPolepoleUpfront) <= 0 || !customerName.trim() || !customerEmail.trim()}
                   style={{ width: '100%' }}
                 >
                   Pay KSh {lipaPolepoleUpfront.toLocaleString()} Upfront with M-Pesa
@@ -484,17 +502,17 @@ function CheckoutPage() {
         </div>
 
         {/* Final Place Order Button */}
-        {/* This button is only enabled for 'Pay on Delivery' or after a payment initiation */}
         <button
-          type={paymentMethod === 'payOnDelivery' ? 'submit' : 'button'} // Only submit form for Pay on Delivery
-          onClick={paymentMethod === 'payOnDelivery' ? placeOrderHandler : null} // No direct onClick for other methods as payments trigger it
+          type={paymentMethod === 'payOnDelivery' ? 'submit' : 'button'}
+          onClick={paymentMethod === 'payOnDelivery' ? placeOrderHandler : null}
           className="button-primary"
           disabled={
             loading ||
-            cartItems.length === 0 || // Disable if cart is empty
-            (deliveryOption === 'delivery' && !deliveryAddress.trim()) || // Require address for delivery
-            (paymentMethod === 'payNow' && !sdkReady && totalPrice > 0) || // Disable if Pay Now selected and SDK not ready
-            (paymentMethod !== 'payOnDelivery' && !message?.text?.includes('M-Pesa STK Push initiated') && !message?.text?.includes('Payment successful')) // Simplified check for payment initiated
+            cartItems.length === 0 ||
+            !customerName.trim() || !customerEmail.trim() || // Require customer info
+            (deliveryOption === 'delivery' && !deliveryAddress.trim()) ||
+            (paymentMethod === 'payNow' && !sdkReady && totalPrice > 0) ||
+            (paymentMethod !== 'payOnDelivery' && !message?.text?.includes('M-Pesa STK Push initiated') && !message?.text?.includes('Payment successful'))
           }
         >
           {loading ? 'Processing...' :
