@@ -1,0 +1,30 @@
+<!-- adasimbo-iphones-frontend/index.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Adasimbo iPhones - Your Premium iPhone & Flagship Samsung Store</title>
+    <!-- Add Google Font link for Inter, or your chosen unique font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="font-sans">
+    <!-- Live Video Background Container -->
+    <div class="video-background">
+      <!-- Ensure you have a video file named 'background-video.mp4' in public/video/ -->
+      <!-- Provide multiple sources for browser compatibility (webm, mov, etc., if available) -->
+      <video autoplay muted loop playsinline>
+        <source src="/video/background-video.mp4" type="video/mp4">
+        <!-- Add fallback content for browsers that don't support the video tag -->
+        Your browser does not support the video tag.
+      </video>
+    </div>
+    <!-- Overlay to ensure text readability -->
+    <div class="video-overlay"></div>
+
+    <!-- This is where your React app will be mounted -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

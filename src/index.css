@@ -1,0 +1,373 @@
+/* adasimbo-iphones-frontend/src/index.css */
+
+/* Apply the custom font globally */
+body {
+  font-family: 'Inter', sans-serif; /* Using a serious font like Inter */
+  scroll-behavior: smooth;
+  overflow-x: hidden; /* Prevent horizontal scroll for video effects */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Base styles for h1, h2, etc. */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700; /* Bold font weight */
+  color: #374151; /* Dark gray for headings */
+}
+
+/* Additional global styles */
+a {
+  color: #2563EB; /* Blue for links */
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: #1D4ED8; /* Slightly darker blue on hover */
+}
+
+/* Styles for the live video background */
+.video-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh; /* Full viewport height */
+  overflow: hidden;
+  z-index: -1; /* Send it to the background */
+}
+
+.video-background video {
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  object-fit: cover; /* Cover the entire container */
+}
+
+/* Overlay to make text readable over the video */
+.video-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4); /* Dark overlay */
+  z-index: -1;
+}
+
+/* --- Navbar Specific Styles --- */
+.main-header {
+  position: fixed;
+  width: 100%;
+  z-index: 10;
+  padding: 1rem;
+  background-color: rgba(17, 24, 39, 0.7); /* gray-900 with opacity */
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  color: #fff;
+}
+
+.navbar {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* Allow items to wrap */
+  padding: 0 1rem; /* Horizontal padding for spacing */
+  width: 100%;
+}
+
+.navbar-brand {
+  font-size: 1.25rem; /* text-xl */
+  font-weight: 700;   /* font-bold */
+  border-radius: 0.375rem; /* rounded-md */
+  text-decoration: none;
+  color: #fff;
+  transition: color 0.2s ease-in-out;
+  flex-shrink: 0; /* Prevent title from shrinking too much */
+  padding: 0.25rem 0.5rem; /* Add padding to make it clickable area */
+  white-space: nowrap;
+  /* Adjustments for preventing escape and better fit */
+  max-width: 200px; /* Limit max width of the brand */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Add ellipsis for overflowed text */
+}
+
+.navbar-nav {
+  display: flex;
+  gap: 0.75rem; /* Reduced gap for tighter packing */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-wrap: wrap; /* Allow nav items to wrap */
+  justify-content: flex-end; /* Push items to the right within the UL */
+  /* Adjustments for centering */
+  flex-grow: 0; /* Prevent nav from taking all available space */
+  margin-right: 2rem; /* Pull buttons inward from the right edge */
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #fff;
+  transition: color 0.2s ease-in-out;
+  padding: 0.5rem 0.75rem; /* Increased padding for better tap targets */
+  border-radius: 0.375rem;
+  white-space: nowrap; /* Prevent nav links from wrapping internally */
+}
+
+/* --- Media Queries for improved responsiveness (Navbar) --- */
+@media (max-width: 600px) { /* Adjust breakpoint as needed */
+  .navbar {
+    flex-direction: column; /* Stack logo and nav vertically on small screens */
+    align-items: flex-start; /* Align items to the start when stacked */
+  }
+
+  .navbar-nav {
+    width: 100%; /* Nav takes full width when stacked */
+    justify-content: center; /* Center nav links below logo */
+    margin-top: 0.5rem; /* Space between logo and nav links */
+    margin-right: 0; /* Reset margin for mobile */
+  }
+
+  .navbar-brand {
+    margin-bottom: 0.5rem; /* Space between logo and nav links */
+    margin-right: 0; /* Reset auto margin from flex-start */
+    width: 100%; /* Allow brand to take full width */
+    text-align: center; /* Center brand name */
+  }
+}
+
+/* New media query for very small screens for navbar-brand font size */
+@media (max-width: 480px) {
+  .navbar-brand {
+    font-size: 1rem; /* Smaller font size for very small screens */
+  }
+}
+
+/* General container for main content to sit above video */
+.container-styles {
+  max-width: 1280px; /* Example max width */
+  margin: 0 auto;
+  padding: 1rem; /* Default padding */
+}
+
+/* --- Grid Containers for Products and Models --- */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Responsive grid, minimum 280px wide cards */
+  gap: 24px; /* Gap between grid items */
+  padding: 1rem; /* Padding inside the grid container */
+  background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white background */
+  border-radius: 0.5rem; /* Rounded corners */
+  box-shadow: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+  margin-top: 1rem; /* Space from heading */
+}
+
+/* --- Product Card (for ModelDetail page) --- */
+.product-card {
+  border: 1px solid #E5E7EB; /* Light gray border */
+  border-radius: 0.75rem; /* More rounded corners */
+  overflow: hidden;
+  background-color: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* shadow-md */
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  width: 100%; /* Ensure it fills its grid column */
+  cursor: pointer;
+  text-decoration: none; /* Remove underline from card link */
+  color: inherit;
+}
+
+.product-card:hover {
+  transform: translateY(-5px); /* Lift effect on hover */
+  box-shadow: 0 10px 15px rgba(0,0,0,0.15), 0 4px 6px rgba(0,0,0,0.1); /* Stronger shadow on hover */
+}
+
+.product-card-image-container {
+  width: 100%;
+  padding-top: 75%; /* 4:3 aspect ratio (height is 75% of width) */
+  position: relative;
+  overflow: hidden;
+  background-color: #f0f0f0; /* Placeholder background for images */
+}
+
+.product-card-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Cover the area, crop if necessary */
+  transition: transform 0.3s ease-in-out;
+}
+
+.product-card:hover .product-card-image {
+  transform: scale(1.05); /* Slight zoom on image hover */
+}
+
+.product-card-content {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.product-card-title {
+  font-size: 1.25rem; /* text-xl */
+  font-weight: 700;   /* font-bold */
+  color: #1F2937; /* gray-900 */
+}
+
+.product-card-description {
+  color: #4B5563; /* gray-700 */
+  font-size: 0.875rem;
+}
+
+.product-card-price {
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 700;   /* font-bold */
+  color: #10B981; /* green-600 */
+}
+
+/* --- Model Card (for Products page) --- */
+.model-card {
+  border: 1px solid #CFCFCF; /* Light gray border */
+  border-radius: 0.75rem; /* Rounded corners */
+  overflow: hidden;
+  background-color: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  width: 100%;
+  height: 250px; /* Fixed height for consistent look */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.model-card:hover {
+  transform: translateY(-5px); /* Lift effect on hover */
+  box-shadow: 0 10px 15px rgba(0,0,0,0.15), 0 4px 6px rgba(0,0,0,0.1); /* Stronger shadow on hover */
+}
+
+.model-card-image-container {
+  width: 100%;
+  max-width: 150px; /* Constrain image width */
+  height: 120px; /* Fixed height for image area */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.model-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Contain the image within its box */
+  transition: transform 0.3s ease-in-out;
+}
+
+.model-card:hover .model-card-image {
+  transform: scale(1.1); /* Slight zoom on image hover */
+}
+
+.model-card-title {
+  font-size: 1.5rem; /* text-2xl */
+  font-weight: 700;   /* font-bold */
+  color: #1F2937; /* gray-900 */
+  margin-bottom: 0.5rem;
+}
+
+/* General button styles */
+.button-primary {
+  background-color: #2563EB; /* Blue-600 */
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 32px; /* py-3 px-8 */
+  border-radius: 9999px; /* rounded-full */
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* shadow-lg */
+  transition: all 0.3s ease-in-out;
+  text-decoration: none; /* Remove underline for links */
+  display: inline-block;
+  border: none;
+  cursor: pointer;
+}
+
+.button-primary:hover {
+  background-color: #1D4ED8; /* Blue-700 */
+  transform: scale(1.05);
+}
+
+.button-secondary {
+  background-color: #E5E7EB; /* Gray-200 */
+  color: #374151; /* Gray-800 */
+  font-weight: 600;
+  padding: 12px 32px;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06); /* shadow-md */
+  transition: all 0.3s ease-in-out;
+  text-decoration: none;
+  display: inline-block;
+  border: none;
+  cursor: pointer;
+}
+
+.button-secondary:hover {
+  background-color: #D1D5DB; /* Gray-300 */
+  transform: scale(1.05);
+}
+
+/* Message box styles */
+.message-box {
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 16px;
+}
+
+.message-box.info {
+  background-color: #DBEAFE; /* Blue-100 */
+  border: 1px solid #93C5FD; /* Blue-400 */
+  color: #1E40AF; /* Blue-800 */
+}
+
+.message-box.danger {
+  background-color: #FEE2E2; /* Red-100 */
+  border: 1px solid #F87171; /* Red-400 */
+  color: #B91C1C; /* Red-800 */
+}
+
+.message-box.warning {
+  background-color: #FEF3C7; /* Yellow-100 */
+  border: 1px solid #FCD34D; /* Yellow-400 */
+  color: #B45309; /* Yellow-800 */
+}
+
+/* Spinner styles */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border-left-color: #4f46e5; /* Indigo-600 */
+  animation: spin 1s ease infinite;
+}
+
