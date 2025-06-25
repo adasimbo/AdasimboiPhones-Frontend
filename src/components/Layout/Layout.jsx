@@ -1,10 +1,10 @@
 // adasimbo-iphones-frontend/src/components/Layout/Layout.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useCart } from '../../contexts/CartContext'; // New: Import useCart
+import { useCart } from '../../contexts/CartContext';
 
 function Layout({ children }) {
-  const { totalItems } = useCart(); // New: Get totalItems from cart context
+  const { totalItems } = useCart();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -25,7 +25,7 @@ function Layout({ children }) {
                 Products
               </a>
             </li>
-            {/* New: Cart Link */}
+            {/* Cart Link */}
             <li>
               <Link to="/cart" className="nav-link" style={{ position: 'relative' }}>
                 Cart
@@ -45,6 +45,12 @@ function Layout({ children }) {
                     {totalItems}
                   </span>
                 )}
+              </Link>
+            </li>
+            {/* New: Contact Link */}
+            <li>
+              <Link to="/contact" className="nav-link">
+                Contact Us
               </Link>
             </li>
           </ul>

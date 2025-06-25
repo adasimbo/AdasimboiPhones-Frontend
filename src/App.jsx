@@ -15,11 +15,13 @@ import Home from './pages/Home/Home';
 import Products from './pages/Products/Products';
 import ProductDetail from './pages/ProductDetail/ProductDetail';
 import ModelDetail from './pages/ModelDetail/ModelDetail';
-import CartPage from './pages/CartPage/CartPage';       // New: Import CartPage
-import CheckoutPage from './pages/CheckoutPage/CheckoutPage'; // New: Import CheckoutPage
+import CartPage from './pages/CartPage/CartPage';
+import CheckoutPage from './pages/CheckoutPage/CheckoutPage';
+import OrderConfirmation from './pages/OrderConfirmation/OrderConfirmation'; // New: Import OrderConfirmation page
+import ContactPage from './pages/ContactPage/ContactPage';       // New: Import ContactPage
 import NotFound from './pages/NotFound/NotFound';
 
-import { CartProvider } from './contexts/CartContext'; // New: Import CartProvider
+import { CartProvider } from './contexts/CartContext';
 
 import './App.css'; // Your specific App-level CSS
 
@@ -59,12 +61,20 @@ const router = createBrowserRouter([
         element: <ProductDetail />,
       },
       {
-        path: "cart", // Route for the Cart Page
+        path: "cart",
         element: <CartPage />,
       },
       {
-        path: "checkout", // New: Route for the Checkout Page
+        path: "checkout",
         element: <CheckoutPage />,
+      },
+      {
+        path: "order-confirmation/:id", // New: Route for Order Confirmation page with ID param
+        element: <OrderConfirmation />,
+      },
+      {
+        path: "contact", // New: Route for Contact page
+        element: <ContactPage />,
       },
       {
         path: "*",
