@@ -371,3 +371,85 @@ a:hover {
   animation: spin 1s ease infinite;
 }
 
+/* --- Model Spotlight Modal Styles (Replaced Hover Modal) --- */
+.model-spotlight-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7); /* Dark semi-transparent background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100; /* Above all other content */
+  opacity: 0;
+  visibility: hidden; /* Start hidden */
+  pointer-events: none; /* Do not block clicks when hidden */
+  transition: opacity 0.3s ease-in-out; /* Only transition opacity */
+}
+
+.model-spotlight-overlay.visible {
+  opacity: 1;
+  visibility: visible; /* Make visible immediately when class is added */
+  pointer-events: auto; /* Enable clicks when visible */
+}
+
+.model-spotlight-content {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  /* Add a subtle transform for content entry/exit */
+  transform: scale(0.95);
+  transition: transform 0.3s ease-out; /* Smooth pop-in/pop-out */
+}
+
+.model-spotlight-overlay.visible .model-spotlight-content {
+  transform: scale(1); /* Scale to normal size when visible */
+}
+
+.model-spotlight-image {
+  max-width: 100%;
+  max-height: 400px; /* Max height for enlarged image */
+  object-fit: contain;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.model-spotlight-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.75rem;
+}
+
+.model-spotlight-description {
+  font-size: 1rem;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+/* Media query for smaller screens */
+@media (max-width: 768px) {
+  .model-spotlight-content {
+    padding: 1rem;
+  }
+  .model-spotlight-title {
+    font-size: 1.5rem;
+  }
+  .model-spotlight-description {
+    font-size: 0.9rem;
+  }
+  .model-spotlight-image {
+    max-height: 300px;
+  }
+}

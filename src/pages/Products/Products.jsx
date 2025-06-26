@@ -1,26 +1,28 @@
 // adasimbo-iphones-frontend/src/pages/Products/Products.jsx
 
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate for explicit navigation
 import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner';
 import MessageBox from '../../components/MessageBox/MessageBox';
 
 function Products() {
-  // baseModels will now be an array of strings again: ["iPhone 16", "iPhone 15", ...]
   const [baseModels, setBaseModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedModel, setSelectedModel] = useState(null); // State to manage the clicked model for the spotlight modal
+  const navigate = useNavigate(); // Initialize navigate hook
 
   useEffect(() => {
     const fetchBaseModels = async () => {
       try {
         setLoading(true);
+        // Fetch data that includes imageUrl and description for each base model
         const response = await fetch('http://localhost:5000/api/products/base-models');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setBaseModels(data); // Data now contains an array of strings
+        setBaseModels(data); // Data now contains an array of objects: [{ modelName, imageUrl, description }, ...]
         setLoading(false);
       } catch (err) {
         console.error("Failed to fetch base models:", err);
@@ -32,16 +34,21 @@ function Products() {
     fetchBaseModels();
   }, []);
 
-  // Function to get a placeholder image for models (re-added)
-  const getModelPlaceholderImage = (modelName) => {
-    if (modelName.toLowerCase().includes('iphone')) {
-      return `https://placehold.co/150x120/E1F5FE/2196F3?text=${encodeURIComponent(modelName.replace(' ', '+'))}`; // Light blue for iPhones
-    } else if (modelName.toLowerCase().includes('samsung')) {
-      return `https://placehold.co/150x120/FFF3E0/FF9800?text=${encodeURIComponent(modelName.replace(' ', '+'))}`; // Light orange for Samsung
-    }
-    return `https://placehold.co/150x120/F0F0F0/333333?text=${encodeURIComponent(modelName.replace(' ', '+'))}`; // Generic
+  // Handler for clicking a model card to open the spotlight modal
+  const handleModelClick = (model) => {
+    setSelectedModel(model);
   };
 
+  // Handler to close the spotlight modal
+  const closeSpotlight = () => {
+    setSelectedModel(null);
+  };
+
+  // Handler for "View All Variations" button inside the spotlight modal
+  const handleViewVariations = (modelName) => {
+    closeSpotlight(); // Close the modal
+    navigate(`/products/models/${encodeURIComponent(modelName)}`); // Navigate to the variations page
+  };
 
   return (
     <div style={{ position: 'relative', zIndex: 0, paddingTop: '2rem', paddingBottom: '2rem', maxWidth: '1280px', margin: '0 auto', padding: '1rem' }}>
@@ -57,22 +64,48 @@ function Products() {
         <MessageBox variant="info">No device models found. Please seed your database!</MessageBox>
       ) : (
         <div className="grid-container">
-          {baseModels.map((modelName) => ( // Iterate over modelName strings
-            <Link
-              to={`/products/models/${encodeURIComponent(modelName)}`}
-              key={modelName}
+          {baseModels.map((model) => ( // Iterate over model objects
+            <div
+              key={model.modelName}
               className="model-card"
+              onClick={() => handleModelClick(model)} // Click handler to open spotlight
+              style={{ cursor: 'pointer' }} // Indicate it's clickable
             >
               <div className="model-card-image-container">
                 <img
-                  src={getModelPlaceholderImage(modelName)} // Use placeholder image
-                  alt={modelName}
+                  src={model.imageUrl} // Use actual image URL from fetched data
+                  alt={model.modelName}
                   className="model-card-image"
+                  onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/150x120/F0F0F0/333333?text=${encodeURIComponent(model.modelName.replace(' ', '+'))}`; }}
                 />
               </div>
-              <h3 className="model-card-title">{modelName}</h3>
-            </Link>
+              <h3 className="model-card-title">{model.modelName}</h3>
+            </div>
           ))}
+        </div>
+      )}
+
+      {/* Model Spotlight Modal */}
+      {selectedModel && (
+        <div className={`model-spotlight-overlay ${selectedModel ? 'visible' : ''}`}>
+          <div className="model-spotlight-content">
+            <img
+              src={selectedModel.imageUrl}
+              alt={selectedModel.modelName}
+              className="model-spotlight-image"
+              onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x300/F0F0F0/333333?text=Image+Not+Found`; }}
+            />
+            <h3 className="model-spotlight-title">{selectedModel.modelName}</h3>
+            <p className="model-spotlight-description">{selectedModel.description}</p>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button onClick={() => handleViewVariations(selectedModel.modelName)} className="button-primary">
+                    View All {selectedModel.modelName} Models
+                </button>
+                <button onClick={closeSpotlight} className="button-secondary">
+                    Close
+                </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
