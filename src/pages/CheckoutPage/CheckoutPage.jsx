@@ -35,7 +35,7 @@ function CheckoutPage() {
 
   // PayPal Client ID (for frontend SDK) - IMPORTANT: Replace with your actual PayPal Client ID
   // For development, use a sandbox client ID directly. For production, fetch from backend securely.
-  const PAYPAL_CLIENT_ID_FRONTEND = "BAAZUzjpX3mXSEx1lchX-rkcp6fRp_x2pSv4_mciaN0y2ROPU5TAms2ivON9icB7IlNTvkzEnPwdY-QFFk"; // <<< REPLACE THIS WITH YOUR REAL PAYPAL CLIENT ID
+  const PAYPAL_CLIENT_ID_FRONTEND = import.meta.env.VITE_PAYPAL_CLIENT_ID_FRONTEND; // <<< REPLACE THIS WITH YOUR REAL PAYPAL CLIENT ID
 
   // Function to handle placing the order for "Pay on Delivery" and "Lipa Polepole"
   const placeOrderHandler = async (e) => {
