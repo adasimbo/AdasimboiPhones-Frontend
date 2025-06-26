@@ -1,7 +1,7 @@
 // adasimbo-iphones-frontend/src/pages/CheckoutPage/CheckoutPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useCart, CART_ACTIONS } from '../../contexts/CartContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; // Keep navigate for cart redirection
 import MessageBox from '../../components/MessageBox/MessageBox';
 import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner';
 
@@ -13,7 +13,7 @@ function CheckoutPage() {
   const { cartItems, totalPrice, dispatch } = useCart();
   const navigate = useNavigate();
 
-  // Customer Information States (NEW)
+  // Customer Information States
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
 
@@ -62,6 +62,9 @@ function CheckoutPage() {
 
     return () => {
       // Cleanup for PayPal script if needed on component unmount
+      // In a real app, you might want to remove the script to prevent issues
+      // with hot reloading or multiple components trying to load it.
+      // However, for simple use cases, leaving it is often fine.
     };
   }, [paymentMethod]);
 
@@ -73,7 +76,7 @@ function CheckoutPage() {
 
     const buttonContainer = document.getElementById('paypal-button-container');
     if (buttonContainer) {
-      buttonContainer.innerHTML = ''; // Clear any existing buttons to prevent duplicates
+      buttonContainer.innerHTML = ''; // Clear any existing buttons to prevent duplicates on re-render
     }
 
     window.paypal.Buttons({
@@ -94,10 +97,10 @@ function CheckoutPage() {
           const orderCapture = await actions.order.capture();
           console.log('PayPal Order Captured:', orderCapture);
 
-          await placeOrderHandler(null, 'PayPal', orderCapture.id); // Pass payment details
-          setMessage({ type: 'success', text: `PayPal payment successful! Order ID: ${orderCapture.id}. Your order has been placed.` });
-          dispatch({ type: CART_ACTIONS.CLEAR_CART });
-          navigate(`/order-confirmation/${orderCapture.id}`); // Redirect to confirmation page
+          await placeOrderHandler(null, 'PayPal', orderCapture.id); 
+          // After placeOrderHandler, the cart is cleared and a success message is set.
+          // No navigation to order confirmation page in this version.
+
         } catch (error) {
           console.error("PayPal capture error or order placement failed:", error);
           setMessage({ type: 'danger', text: 'PayPal payment failed or order could not be placed in our system.' });
@@ -113,30 +116,35 @@ function CheckoutPage() {
       onCancel: (data) => {
         setMessage({ type: 'info', text: 'PayPal payment cancelled by user.' });
       }
-    }).render('#paypal-button-container');
+    }).render('#paypal-button-container'); // Render the button into the specific container div
   };
 
+  // Re-render PayPal buttons when SDK is ready, payment method is 'payNow', or total price changes
   useEffect(() => {
     if (sdkReady && paymentMethod === 'payNow' && totalPrice > 0) {
       renderPayPalButtons();
     }
-  }, [sdkReady, paymentMethod, totalPrice]);
+  }, [sdkReady, paymentMethod, totalPrice]); // Depend on relevant states
 
+  // Function to initiate M-Pesa STK Push
   const initiateMpesaPayment = async (amount, isLipaPolepole = false) => {
     setLoading(true);
     setMessage(null);
 
+    // Validate M-Pesa phone number format
     if (!mpesaPhoneNumber.trim() || !/^(?:254|\+254|0)?(7\d{8}|1\d{8})$/.test(mpesaPhoneNumber)) {
       setMessage({ type: 'danger', text: 'Please enter a valid M-Pesa phone number (e.g., 0712345678 or 254712345678).' });
       setLoading(false);
       return;
     }
-    if (!customerName.trim() || !customerEmail.trim()) { // New: Validate customer info
+    // Validate customer contact info
+    if (!customerName.trim() || !customerEmail.trim()) {
         setMessage({type: 'danger', text: 'Please fill in your Name and Email for contact information.'});
         setLoading(false);
         return;
     }
 
+    // Normalize phone number to 254 format for Daraja API
     let formattedPhoneNumber = mpesaPhoneNumber.trim();
     if (formattedPhoneNumber.startsWith('0')) {
       formattedPhoneNumber = '254' + formattedPhoneNumber.substring(1);
@@ -145,15 +153,19 @@ function CheckoutPage() {
     }
 
     try {
+      // Make an API call to your backend for Daraja STK Push initiation
+      console.log(`Initiating M-Pesa STK Push for KSh ${amount} to ${formattedPhoneNumber}`);
+      console.log(`Lipa Polepole option: ${isLipaPolepole}`);
+
       const response = await fetch('http://localhost:5000/api/payments/mpesa/stkpush', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: Number(amount),
+          amount: Number(amount), // Ensure amount is a number
           phoneNumber: formattedPhoneNumber,
-          orderId: 'frontend_temp_order_id_' + Date.now(), // Temporary ID
+          orderId: 'frontend_temp_order_id_' + Date.now(), // Temporary ID for tracking
           isLipaPolepole: isLipaPolepole,
         }),
       });
@@ -166,7 +178,8 @@ function CheckoutPage() {
       const data = await response.json();
       setMessage({ type: 'info', text: data.message || 'M-Pesa STK Push initiated. Please enter your M-Pesa PIN on your phone to complete the transaction.' });
 
-      // After simulated M-Pesa success, proceed to place order
+      // After simulated M-Pesa success (STK Push initiated), proceed to place the order.
+      // In a robust production system, the order would only be finalized after a successful M-Pesa callback (webhook) from Daraja.
       await placeOrderHandler(null, 'Mpesa', data.CheckoutRequestID || 'MPESA_TXN_ID_PENDING'); // Pass Daraja CheckoutRequestID
 
     } catch (error) {
@@ -177,26 +190,27 @@ function CheckoutPage() {
     }
   };
 
+  // Main handler for placing the order in your database
   const placeOrderHandler = async (e, paymentGatewayType = null, paymentGatewayTxnId = null) => {
-    if (e) e.preventDefault();
+    if (e) e.preventDefault(); // Prevent default form submission if called by a button with type="submit"
     setLoading(true);
     setMessage(null);
 
-    // Validate customer info (NEW)
+    // Validate customer contact information
     if (!customerName.trim() || !customerEmail.trim()) {
         setMessage({type: 'danger', text: 'Please fill in your Name and Email for contact information.'});
         setLoading(false);
         return;
     }
 
-    // Basic delivery validation
+    // Validate delivery address if 'delivery' option is selected
     if (deliveryOption === 'delivery' && !deliveryAddress.trim()) {
       setMessage({ type: 'danger', text: 'Please enter your delivery address.' });
       setLoading(false);
       return;
     }
     
-    // Ensure payment method specific validations are handled
+    // Ensure payment method specific validations are handled (e.g., payment completed for 'payNow')
     if (paymentMethod !== 'payOnDelivery' && !paymentGatewayTxnId) {
         setMessage({ type: 'danger', text: 'Please complete the payment using the selected payment method first.' });
         setLoading(false);
@@ -206,13 +220,13 @@ function CheckoutPage() {
     try {
       const orderData = {
         orderItems: cartItems.map(item => ({
-          product: item._id,
+          product: item._id, // Send product ID
           name: item.name,
           imageUrl: item.imageUrl,
           price: item.price,
           qty: item.qty,
         })),
-        customerInfo: { // New: Add customer information
+        customerInfo: { // Add customer information to the order payload
             name: customerName.trim(),
             email: customerEmail.trim(),
         },
@@ -223,11 +237,11 @@ function CheckoutPage() {
         paymentMethod,
         itemsPrice: totalPrice,
         totalPrice: totalPrice,
-        isPaid: paymentMethod !== 'payOnDelivery',
-        paidAt: paymentMethod !== 'payOnDelivery' ? new Date().toISOString() : null,
-        paymentResult: paymentGatewayTxnId ? {
+        isPaid: paymentMethod !== 'payOnDelivery', // Mark as paid if not Cash on Delivery
+        paidAt: paymentMethod !== 'payOnDelivery' ? new Date().toISOString() : null, // Set paid date if not COD
+        paymentResult: paymentGatewayTxnId ? { // Store payment gateway transaction details
           id: paymentGatewayTxnId,
-          status: 'COMPLETED', // Or 'PENDING' for Daraja STK until webhook
+          status: 'COMPLETED', // Or 'PENDING' for Daraja STK until webhook is received
           update_time: new Date().toISOString(),
           payerInfo: paymentGatewayType === 'PayPal' ? customerEmail.trim() : mpesaPhoneNumber.trim(), // Use customer's email or mpesa phone
           paymentGateway: paymentGatewayType
@@ -237,7 +251,7 @@ function CheckoutPage() {
         balanceDue: paymentMethod === 'lipaPolepole' ? Number(lipaPolepoleBalance) : 0,
       };
 
-
+      // Send order data to your backend API
       const response = await fetch('http://localhost:5000/api/orders', {
         method: 'POST',
         headers: {
@@ -248,13 +262,18 @@ function CheckoutPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Backend order creation error details:", errorData); // Log error details from backend
         throw new Error(errorData.message || 'Failed to place order.');
       }
 
-      const data = await response.json();
-      setMessage({ type: 'success', text: `Order placed successfully! Order ID: ${data._id}.` });
-      dispatch({ type: CART_ACTIONS.CLEAR_CART });
-      navigate(`/order-confirmation/${data._id}`); // Redirect to confirmation page with order ID
+      const data = await response.json(); // Get the created order data from the backend
+      console.log("Order placed successfully. Backend response data:", data); // Log the full response data
+      
+      // Removed: navigate(`/order-confirmation/${data._id}`); // No redirection to confirmation page in this version
+      setMessage({ type: 'success', text: `Order placed successfully! Order ID: ${data._id}. Your cart has been cleared.` });
+      dispatch({ type: CART_ACTIONS.CLEAR_CART }); // Clear cart after successful order
+
+
     } catch (error) {
       console.error('Order placement error:', error);
       setMessage({ type: 'danger', text: error.message || 'An error occurred during order placement. Please try again.' });
@@ -263,13 +282,24 @@ function CheckoutPage() {
     }
   };
 
+  // Helper boolean for button disabled state to improve readability and potentially parsing
+  const isPlaceOrderButtonDisabled = 
+    loading ||
+    cartItems.length === 0 ||
+    !customerName.trim() || !customerEmail.trim() || 
+    (deliveryOption === 'delivery' && !deliveryAddress.trim()) ||
+    (paymentMethod === 'payNow' && !sdkReady && totalPrice > 0) ||
+    (paymentMethod === 'payNow' && totalPrice > 0 && !message?.text?.includes('PayPal payment successful') && !message?.text?.includes('M-Pesa STK Push initiated')) ||
+    (paymentMethod === 'lipaPolepole' && !message?.text?.includes('M-Pesa STK Push initiated'));
+
+
   return (
     <div style={{
       maxWidth: '800px',
       margin: '0 auto',
       padding: '2rem',
-      paddingTop: '6rem',
-      minHeight: 'calc(100vh - 8rem)',
+      paddingTop: '6rem', // Adjust for fixed header
+      minHeight: 'calc(100vh - 8rem)', // Ensure content pushes footer down
       backgroundColor: 'rgba(255, 255, 255, 0.9)',
       borderRadius: '0.5rem',
       boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
@@ -296,7 +326,7 @@ function CheckoutPage() {
           </p>
         </div>
 
-        {/* Customer Information Section (NEW) */}
+        {/* Customer Information Section */}
         <div style={{ border: '1px solid #D1D5DB', borderRadius: '0.5rem', padding: '1.5rem', backgroundColor: '#F9FAFB' }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: '#1F2937' }}>Your Contact Information</h2>
             <div style={{ marginBottom: '1rem' }}>
