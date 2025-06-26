@@ -7,7 +7,7 @@ import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner';
 
 // IMPORTANT: Replace 'YOUR_PAYPAL_CLIENT_ID' with your actual PayPal Sandbox or Live Client ID
 // For local development, you'll typically use a Sandbox Client ID.
-const PAYPAL_SDK_URL = BAAZUzjpX3mXSEx1lchX-rkcp6fRp_x2pSv4_mciaN0y2ROPU5TAms2ivON9icB7IlNTvkzEnPwdY-QFFk;
+const PAYPAL_SDK_URL =`https://www.paypal.com/sdk/js?client-id=BAAZUzjpX3mXSEx1lchX-rkcp6fRp_x2pSv4_mciaN0y2ROPU5TAms2ivON9icB7IlNTvkzEnPwdY-QFFk`;
 
 function CheckoutPage() {
   const { cartItems, totalPrice, dispatch } = useCart();
