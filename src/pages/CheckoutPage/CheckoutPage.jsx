@@ -143,6 +143,23 @@ function CheckoutPage() {
         return;
     }
 
+    // Format the phone number to start with 254 (remove leading 0 or +)
+    let formattedPhoneNumber = mpesaPhoneNumber;
+    if (formattedPhoneNumber.startsWith('0') && formattedPhoneNumber.length === 10) {
+      formattedPhoneNumber = '254' + formattedPhoneNumber.substring(1);
+    } else if (formattedPhoneNumber.startsWith('+254') && formattedPhoneNumber.length === 13) {
+      formattedPhoneNumber = formattedPhoneNumber.substring(1); // Remove '+'
+    } else if (!formattedPhoneNumber.startsWith('254') && formattedPhoneNumber.length === 9) { // Handles 7XXXXXXXX format
+      formattedPhoneNumber = '254' + formattedPhoneNumber;
+    }
+    // Basic validation for the formatted number (e.g., regex for 2547XXXXXXXX) could be added here
+    if (!/^(2547|2541)\d{8}$/.test(formattedPhoneNumber)) {
+        setError('Invalid phone number format. Please use 07XXXXXXXX or 2547XXXXXXXX.');
+        setLoading(false);
+        return;
+    }
+
+
     // Create a temporary order ID for linking the STK push to your system
     const tempOrderId = `TEMP_ORDER_${Date.now()}`;
 
@@ -154,7 +171,7 @@ function CheckoutPage() {
         },
         body: JSON.stringify({
           amount: amountToPay, // Send the calculated amount (full or upfront)
-          phoneNumber: mpesaPhoneNumber,
+          phoneNumber: formattedPhoneNumber, // Use the formatted number here
           orderId: tempOrderId, // Pass a reference to your order
           isLipaPolepole: paymentMethod === 'lipaPolepole' // Indicate if it's Lipa Polepole
         }),
@@ -187,7 +204,7 @@ function CheckoutPage() {
           id: data.CheckoutRequestID, // Store Daraja's CheckoutRequestID
           status: 'PENDING',
           update_time: new Date().toISOString(),
-          payerInfo: mpesaPhoneNumber,
+          payerInfo: formattedPhoneNumber, // Store the formatted number
           paymentGateway: 'Mpesa',
         },
       };
