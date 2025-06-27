@@ -35,9 +35,9 @@ function CheckoutPage() {
 
   // PayPal Client ID (for frontend SDK) - IMPORTANT: Replace with your actual PayPal Client ID
   // For development, use a sandbox client ID directly. For production, fetch from backend securely.
-  const PAYPAL_CLIENT_ID_FRONTEND = import.meta.env.VITE_PAYPAL_CLIENT_ID_FRONTEND; // <<< REPLACE THIS WITH YOUR REAL PAYPAL CLIENT ID
+  const PAYPAL_CLIENT_ID_FRONTEND = "YOUR_PAYPAL_CLIENT_ID_HERE"; // <<< REPLACE THIS WITH YOUR REAL PAYPAL CLIENT ID
 
-  // Function to handle placing the order for "Pay on Delivery" and "Lipa Polepole"
+  // Function to handle placing the order for "Pay on Delivery"
   const placeOrderHandler = async (e) => {
     // Only prevent default if it's a direct form submission for these methods
     if (e) e.preventDefault();
@@ -73,13 +73,13 @@ function CheckoutPage() {
         option: deliveryOption,
         address: deliveryOption === 'delivery' ? deliveryAddress : undefined, // Only send address if delivery
       },
-      paymentMethod,
+      paymentMethod, // Will be 'payOnDelivery' here
       itemsPrice: totalPrice,
       totalPrice: totalPrice,
-      isPaid: false, // Default to false, payment will be confirmed later for POD/LipaPolepole
+      isPaid: false,
       paidAt: undefined,
-      paymentStatus: paymentMethod === 'payOnDelivery' ? 'pending' : 'partially_paid', // For Lipa Polepole
-      balanceDue: paymentMethod === 'lipaPolepole' ? totalPrice * 0.2 : 0, // Example: 20% upfront for Lipa Polepole
+      paymentStatus: 'pending',
+      balanceDue: 0,
     };
 
     try {
@@ -131,10 +131,20 @@ function CheckoutPage() {
       return;
     }
 
-    // Create a temporary order in your backend or generate a unique ID
-    // before initiating STK push, so you can link the callback.
-    // For simplicity here, we'll just use a placeholder order ID.
-    const tempOrderId = `TEMP_ORDER_${Date.now()}`; // In a real app, this would be a pre-saved order ID
+    // Determine the amount to send to M-Pesa based on payment method
+    // For Lipa Polepole, send 80% upfront
+    const amountToPay = paymentMethod === 'lipaPolepole' ? totalPrice * 0.8 : totalPrice;
+
+    // M-Pesa requires a minimum amount (e.g., 1 KES in sandbox).
+    // Ensure the amount is at least 1.
+    if (amountToPay < 1) { // Assuming minimum M-Pesa transaction is 1 KES
+        setError('Amount to pay must be at least KSh 1.00.');
+        setLoading(false);
+        return;
+    }
+
+    // Create a temporary order ID for linking the STK push to your system
+    const tempOrderId = `TEMP_ORDER_${Date.now()}`;
 
     try {
       const response = await fetch('http://localhost:5000/api/payments/mpesa/stkpush', {
@@ -143,7 +153,7 @@ function CheckoutPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: totalPrice, // Send the total amount
+          amount: amountToPay, // Send the calculated amount (full or upfront)
           phoneNumber: mpesaPhoneNumber,
           orderId: tempOrderId, // Pass a reference to your order
           isLipaPolepole: paymentMethod === 'lipaPolepole' // Indicate if it's Lipa Polepole
@@ -158,12 +168,6 @@ function CheckoutPage() {
       const data = await response.json();
       setMessage(data.CustomerMessage || 'M-Pesa STK Push initiated. Please check your phone to complete the payment.');
 
-      // After successful STK push initiation, we should ideally wait for the callback
-      // or poll the backend for payment status. For now, we'll assume success and
-      // proceed to place the order in the database with payment details.
-      // In a real app, you'd likely have a specific endpoint for order finalization
-      // after payment confirmation.
-
       // Place the order in your database after STK push is initiated
       const orderData = {
         orderItems: cartItems.map(item => ({
@@ -171,13 +175,14 @@ function CheckoutPage() {
         })),
         customerInfo: { name: customerName, email: customerEmail, phoneNumber: customerPhoneNumber },
         deliveryInfo: { option: deliveryOption, address: deliveryOption === 'delivery' ? deliveryAddress : undefined },
-        paymentMethod: 'payNow', // Explicitly set to payNow as M-Pesa is used
+        paymentMethod: paymentMethod, // Use the actual paymentMethod selected ('payNow' or 'lipaPolepole')
         itemsPrice: totalPrice,
         totalPrice: totalPrice,
-        isPaid: false, // Will be true upon M-Pesa callback confirmation
-        paidAt: undefined,
-        paymentStatus: 'pending', // Awaiting M-Pesa callback
-        balanceDue: 0, // M-Pesa is usually full payment, adjust for Lipa Polepole if needed
+        // Set payment status based on whether it's a full payment or a partial upfront
+        isPaid: paymentMethod === 'lipaPolepole' ? true : false, // Upfront is paid for Lipa Polepole, full payment for Pay Now (will be confirmed by callback)
+        paidAt: new Date().toISOString(),
+        paymentStatus: paymentMethod === 'lipaPolepole' ? 'partially_paid' : 'pending', // Awaiting M-Pesa callback for full payment
+        balanceDue: paymentMethod === 'lipaPolepole' ? totalPrice * 0.2 : 0, // Remaining for Lipa Polepole
         paymentResult: {
           id: data.CheckoutRequestID, // Store Daraja's CheckoutRequestID
           status: 'PENDING',
@@ -199,7 +204,6 @@ function CheckoutPage() {
       }
 
       const finalOrderData = await orderResponse.json();
-      // Message will be updated by the M-Pesa callback, but for now, redirect
       setMessage('M-Pesa payment initiated. Please complete on your phone. Redirecting to confirmation...');
       dispatch({ type: CART_ACTIONS.CLEAR_CART });
       navigate(`/order-confirmation/${finalOrderData._id}`);
@@ -461,8 +465,30 @@ function CheckoutPage() {
             </label>
           </div>
 
-          {/* Conditional rendering for Pay Now sub-options */}
-          {paymentMethod === 'payNow' && (
+          {/* Conditional rendering for Lipa Polepole upfront/remaining calculation */}
+          {paymentMethod === 'lipaPolepole' && (
+            <div style={{
+              backgroundColor: '#E0F2F7', // Light blue background
+              border: '1px solid #81D4FA', // Blue border
+              borderRadius: '0.375rem',
+              padding: '1rem',
+              marginTop: '1rem',
+              color: '#01579B', // Dark blue text
+              fontSize: '0.9rem',
+            }}>
+              <p>
+                For Lipa Polepole, an upfront payment of{' '}
+                <strong>KSh {(totalPrice * 0.8).toLocaleString()}</strong> is required.
+              </p>
+              <p>
+                The remaining balance of{' '}
+                <strong>KSh {(totalPrice * 0.2).toLocaleString()}</strong> will be paid in installments over 2 weeks.
+              </p>
+            </div>
+          )}
+
+          {/* Conditional rendering for Pay Now and Lipa Polepole online payment sub-options */}
+          {(paymentMethod === 'payNow' || paymentMethod === 'lipaPolepole') && (
             <div style={{ borderTop: '1px dashed #D1D5DB', paddingTop: '1rem', marginTop: '1rem' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.75rem', color: '#1F2937' }}>Choose Online Payment Method:</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -540,9 +566,10 @@ function CheckoutPage() {
             Total: KSh {totalPrice.toLocaleString()}
           </h2>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-            {(paymentMethod === 'payOnDelivery' || paymentMethod === 'lipaPolepole') && (
+            {/* Only show 'Place Order' button for 'Pay on Delivery' */}
+            {paymentMethod === 'payOnDelivery' && (
               <button
-                type="button" // Changed to type="button" as form submission is now handled by placeOrderHandler directly
+                type="button"
                 onClick={placeOrderHandler}
                 className="button-primary"
                 disabled={cartItems.length === 0 || loading}
