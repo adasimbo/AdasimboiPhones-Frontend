@@ -20,7 +20,7 @@ function OrderConfirmation() {
       try {
         setLoading(true);
         // Fetch order details from your backend
-        const response = await fetch(`http://localhost:5000/api/orders/${id}`);
+        const response = await fetch(`https://adasimboiphones-backend.onrender.com/api/orders/${id}`);
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error('Order not found.');

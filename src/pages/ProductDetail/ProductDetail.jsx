@@ -19,7 +19,7 @@ function ProductDetail() {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/products/${id}`);
+        const response = await fetch(`https://adasimboiphones-backend.onrender.com/api/products/${id}`);
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error('Product not found.');

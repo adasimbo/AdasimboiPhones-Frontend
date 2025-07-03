@@ -18,7 +18,7 @@ function Products() {
       try {
         setLoading(true);
         // Fetch data that includes imageUrl, description, rating, and numReviews for each base model
-        const response = await fetch('http://localhost:5000/api/products/base-models');
+        const response = await fetch('https://adasimboiphones-backend.onrender.com/api/products/base-models');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

@@ -17,7 +17,7 @@ function ModelDetail() {
       try {
         setLoading(true);
         const encodedModelName = encodeURIComponent(baseModelName);
-        const response = await fetch(`http://localhost:5000/api/products/variations/${encodedModelName}`);
+        const response = await fetch(`https://adasimboiphones-backend.onrender.com/api/products/variations/${encodedModelName}`);
 
         if (!response.ok) {
           if (response.status === 404) {

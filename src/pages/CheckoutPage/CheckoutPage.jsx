@@ -83,7 +83,7 @@ function CheckoutPage() {
     };
 
     try {
-      const response = await fetch('http://localhost:5000/api/orders', {
+      const response = await fetch('https://adasimboiphones-backend.onrender.com/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +164,7 @@ function CheckoutPage() {
     const tempOrderId = `TEMP_ORDER_${Date.now()}`;
 
     try {
-      const response = await fetch('http://localhost:5000/api/payments/mpesa/stkpush', {
+      const response = await fetch('https://adasimboiphones-backend.onrender.com/api/payments/mpesa/stkpush', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ function CheckoutPage() {
         },
       };
 
-      const orderResponse = await fetch('http://localhost:5000/api/orders', {
+      const orderResponse = await fetch('https://adasimboiphones-backend.onrender.com/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),
@@ -261,7 +261,7 @@ function CheckoutPage() {
     setMessage(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/payments/paypal/verify', {
+      const response = await fetch('https://adasimboiphones-backend.onrender.com/api/payments/paypal/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -301,7 +301,7 @@ function CheckoutPage() {
         },
       };
 
-      const orderResponse = await fetch('http://localhost:5000/api/orders', {
+      const orderResponse = await fetch('https://adasimboiphones-backend.onrender.com/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),
