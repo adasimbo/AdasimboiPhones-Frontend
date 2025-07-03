@@ -79,11 +79,11 @@ function Layout({ children }) {
             <h3 className="text-lg font-bold mb-4 text-white">Contact</h3>
             <div className="flex items-center mb-3">
               <i className="fas fa-phone-alt text-accent mr-3"></i>
-              <span>+254 700 123 456</span>
+              <span>+254 746 796 417</span>
             </div>
             <div className="flex items-center">
               <i className="fas fa-envelope text-accent mr-3"></i>
-              <span>support@istorekenya.co.ke</span>
+              <span>adasimboroyalty@gmail.com</span>
             </div>
           </div>
         </div>
